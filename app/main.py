@@ -36,10 +36,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the API routes
-from app.api.v1.routes import api_router
+# Include the API routes (exact paths as per README.md)
+from app.api.v1.router import api_router
 
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(api_router)
 
 @app.get("/")
 def read_root():

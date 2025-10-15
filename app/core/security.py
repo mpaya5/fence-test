@@ -28,7 +28,7 @@ async def get_api_key(
             status_code=HTTP_403_FORBIDDEN, detail="No API key provided"
         )
 
-    if api_key_header != settings.EXPLORER_BACKEND_API_KEY_AUTH:
+    if api_key_header != settings.API_KEY_AUTH:
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid API key")
 
     return api_key_header
