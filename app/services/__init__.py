@@ -7,5 +7,5 @@ def get_interest_rate_service() -> InterestRateService:
     """Get the interest rate service instance with Smart Contract storage."""
     # Web3Client is now a singleton - no need to pass parameters
     web3_client = Web3Client()
-    storage = SmartContractStorage(web3_client)
-    return InterestRateService(storage)
+    smart_contract_storage = SmartContractStorage(web3_client)
+    return InterestRateService(smart_contract_storage)

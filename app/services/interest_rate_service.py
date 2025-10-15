@@ -1,30 +1,19 @@
-from abc import ABC, abstractmethod
+"""
+Service for managing interest rate operations.
+"""
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime, timezone
 
 from ..schemas.endpoints.assets import AssetRequest
-
-
-class InterestRateStorage(ABC):
-    """Abstract storage interface for interest rate data."""
-    
-    @abstractmethod
-    async def save_interest_rate(self, rate: Decimal, timestamp: str) -> None:
-        """Save an interest rate with timestamp."""
-        pass
-    
-    @abstractmethod
-    async def get_current_interest_rate(self) -> Optional[tuple[Decimal, str]]:
-        """Get the current interest rate and timestamp."""
-        pass
+from ..smart_contracts.smart_contract_storage import SmartContractStorage
 
 
 class InterestRateService:
     """Service for managing interest rate operations."""
     
-    def __init__(self, storage: InterestRateStorage):
-        self.storage = storage
+    def __init__(self, smart_contract_storage: SmartContractStorage):
+        self.storage = smart_contract_storage
     
     async def calculate_and_save_average_rate(self, assets: List[AssetRequest]) -> Decimal:
         """

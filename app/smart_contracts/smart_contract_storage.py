@@ -1,12 +1,11 @@
 import time
 from typing import Optional
 from decimal import Decimal
-from ..services.interest_rate_service import InterestRateStorage
 from .client.web3_client import Web3Client
 from app.core.logger import logger
 
-class SmartContractStorage(InterestRateStorage):
-    """Smart Contract implementation of InterestRateStorage."""
+class SmartContractStorage:
+    """Smart Contract storage for interest rate data."""
     
     def __init__(self, web3_client: Web3Client):
         """
