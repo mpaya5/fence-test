@@ -1,0 +1,26 @@
+# base image mostly copied from Dockerfile.backend to reuse cache
+FROM python:3.13.7-slim AS base
+
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+WORKDIR /app
+
+COPY app/database_handler/migration/requirements.txt /app/app/database_handler/migration/requirements.txt
+RUN pip install -r /app/app/database_handler/migration/requirements.txt
+
+COPY . /app
+
+ENV PYTHONPATH=/app
+ENV DOCKER_ENV=1
+
+# Set ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+WORKDIR /app
+
+ENTRYPOINT [ "alembic" ]
+CMD [ "-c", "app/database_handler/migration/alembic.ini", "upgrade", "head" ]

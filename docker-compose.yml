@@ -1,17 +1,71 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fence_test}
+      POSTGRES_USER: ${POSTGRES_USER:-fence_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fence_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fence_user} -d ${POSTGRES_DB:-fence_test}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  database_migrations:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migrations
+    environment:
+      - DOCKER_ENV=1
+      - POSTGRES_SERVER=${POSTGRES_SERVER:-postgres}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-fence_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fence_password}
+      - POSTGRES_DB=${POSTGRES_DB:-fence_test}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   fence-test-api:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     environment:
-      - API_KEY_AUTH=your-secret-api-key-here
-      - DEBUG=true
+      - API_KEY_AUTH=${API_KEY_AUTH:-your-secret-api-key-here}
+      - DEBUG=${DEBUG:-true}
       - PYTHONPATH=/app
+      - POSTGRES_SERVER=${POSTGRES_SERVER:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-fence_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fence_password}
+      - POSTGRES_DB=${POSTGRES_DB:-fence_test}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
     volumes:
       - ./app:/app/app:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: true
+      database_migrations:
+        condition: service_completed_successfully
     restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,10 +1,8 @@
-from pydantic_settings import BaseSettings
 from decouple import config
+import os
 
-class Settings(BaseSettings):
-    API_KEY_NAME: str = config("API_KEY_NAME", default="api_key", cast=str)
-    API_KEY_AUTH: str = config("API_KEY_AUTH", default="", cast=str)
 
+class Settings:
     POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="", cast=str)
     POSTGRES_USER: str = config("POSTGRES_USER", default="", cast=str)
     POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="", cast=str)
@@ -14,5 +12,6 @@ class Settings(BaseSettings):
     @property
     def SQLALCHEMY_DATABASE_URL(self) -> str:
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+
 
 settings = Settings()

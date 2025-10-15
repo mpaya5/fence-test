@@ -1,30 +1,14 @@
-from abc import ABC, abstractmethod
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime, timezone
 
 from ..schemas.endpoints.assets import AssetRequest
 
-
-class InterestRateStorage(ABC):
-    """Abstract storage interface for interest rate data."""
-    
-    @abstractmethod
-    async def save_interest_rate(self, rate: Decimal, timestamp: str) -> None:
-        """Save an interest rate with timestamp."""
-        pass
-    
-    @abstractmethod
-    async def get_current_interest_rate(self) -> Optional[tuple[Decimal, str]]:
-        """Get the current interest rate and timestamp."""
-        pass
-
-
 class InterestRateService:
     """Service for managing interest rate operations."""
     
-    def __init__(self, storage: InterestRateStorage):
-        self.storage = storage
+    def __init__(self, repository):
+        self.repository = repository
     
     async def calculate_and_save_average_rate(self, assets: List[AssetRequest]) -> Decimal:
         """
@@ -47,10 +31,10 @@ class InterestRateService:
         average_rate = total_rate / len(assets)
         
         # Get current timestamp
-        current_time = datetime.now(timezone.utc).isoformat()
+        current_time = datetime.now(timezone.utc)
         
-        # Save to storage
-        await self.storage.save_interest_rate(average_rate, current_time)
+        # Save to repository
+        self.repository.save_interest_rate(average_rate, current_time)
         
         return average_rate
     
@@ -61,4 +45,4 @@ class InterestRateService:
         Returns:
             Optional[tuple[Decimal, str]]: Rate and timestamp, or None if not found
         """
-        return await self.storage.get_current_interest_rate()
+        return self.repository.get_current_interest_rate()
