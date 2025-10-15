@@ -1,0 +1,55 @@
+# Use Node.js 18 Alpine for smaller image
+FROM node:18-alpine
+
+# Install system dependencies
+RUN apk add --no-cache git curl
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies (including dev dependencies for hardhat-deploy)
+RUN npm ci
+
+# Copy Hardhat configuration, contracts, and deploy scripts
+COPY hardhat.config.js ./
+COPY contracts/ ./contracts/
+COPY deploy/ ./deploy/
+
+# Compile contracts
+RUN npx hardhat compile
+
+# Create startup script that deploys contracts and starts node
+RUN echo '#!/bin/sh\n\
+# Start Hardhat node in background\n\
+echo "Starting Hardhat node..."\n\
+npx hardhat node --hostname 0.0.0.0 &\n\
+NODE_PID=$!\n\
+\n\
+# Wait for node to be ready with better checking\n\
+echo "Waiting for Hardhat node to be ready..."\n\
+for i in $(seq 1 30); do\n\
+  if curl -s http://localhost:8545 > /dev/null 2>&1; then\n\
+    echo "Hardhat node is ready!"\n\
+    break\n\
+  fi\n\
+  echo "Attempt $i/30: Node not ready yet, waiting..."\n\
+  sleep 2\n\
+done\n\
+\n\
+# Deploy contracts\n\
+echo "Deploying contracts..."\n\
+npx hardhat deploy --network localhost\n\
+\n\
+echo "Deployment completed. Node running..."\n\
+# Keep node running\n\
+wait $NODE_PID\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Expose port for Hardhat node
+EXPOSE 8545
+
+# Start with our custom script
+CMD ["/app/start.sh"]

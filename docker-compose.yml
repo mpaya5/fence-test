@@ -1,6 +1,25 @@
-version: '3.8'
-
 services:
+  # Hardhat blockchain node
+  hardhat-node:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.hardhat
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./contracts:/app/contracts:ro
+      - ./deploy:/app/deploy:ro
+      - ./hardhat.config.js:/app/hardhat.config.js:ro
+      - ./.env:/app/.env
+      - hardhat_cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI application
   fence-test-api:
     build:
       context: .
@@ -8,10 +27,19 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - API_KEY_AUTH=your-secret-api-key-here
-      - DEBUG=true
+      - API_KEY_AUTH=${API_KEY_AUTH:-your-secret-api-key-here}
+      - DEBUG=${DEBUG:-true}
       - PYTHONPATH=/app
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://hardhat-node:8545}
+      - CONTRACT_ADDRESS=${CONTRACT_ADDRESS:-}
+      - PRIVATE_KEY=${PRIVATE_KEY:-}
     volumes:
       - ./app:/app/app:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      hardhat-node:
+        condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  hardhat_cache:

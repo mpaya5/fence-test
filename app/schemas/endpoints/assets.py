@@ -27,10 +27,19 @@ class AssetListRequest(BaseModel):
         }
 
 
-class InterestRateResponse(BaseModel):
-    """Response schema for interest rate endpoints."""
+class GETInterestRateResponse(BaseModel):
+    """Response schema for GET interest rate endpoint."""
     interest_rate: Decimal = Field(..., description="Current average interest rate")
     updated_at: str = Field(..., description="Timestamp when the rate was last updated")
+    
+    class Config:
+        json_encoders = {
+            Decimal: str
+        }
+
+class POSTInterestRateResponse(BaseModel):
+    """Response schema for POST asset endpoint."""
+    message: str = Field(..., description="Confirmation message")
     
     class Config:
         json_encoders = {
@@ -40,5 +49,4 @@ class InterestRateResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response schema."""
-    error: str = Field(..., description="Error message")
-    detail: str = Field(None, description="Additional error details")
+    detail: str = Field(..., description="Error message")

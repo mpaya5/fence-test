@@ -1,0 +1,21 @@
+{
+  "name": "fence-test-smart-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for Fence Test application",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "node": "npx hardhat node",
+    "deploy": "npx hardhat deploy --network localhost",
+    "deploy:reset": "npx hardhat deploy --network localhost --reset",
+    "clean": "npx hardhat clean"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0",
+    "hardhat-deploy": "^0.12.4"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0"
+  }
+}
