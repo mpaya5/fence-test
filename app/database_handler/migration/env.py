@@ -32,7 +32,6 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.database_handler.models.base import Base
-from app.database_handler.models.interest_rate import InterestRate  # Import all models
 
 target_metadata = Base.metadata
 

@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.core.security import get_api_key
 from app.schemas.endpoints.assets import (
     AssetRequest,
-    InterestRateResponse,
-    ErrorResponse
+    GETInterestRateResponse,
+    ErrorResponse,
+    POSTInterestRateResponse
 )
 from app.services import get_interest_rate_service, InterestRateService
 
@@ -13,7 +14,7 @@ router = APIRouter()
 
 @router.post(
     "/asset",
-    response_model=InterestRateResponse,
+    response_model=POSTInterestRateResponse,
     status_code=status.HTTP_200_OK,
     responses={
         400: {"model": ErrorResponse, "description": "Bad Request"},
@@ -35,22 +36,17 @@ async def update_assets(
         api_key: API key for authentication
         
     Returns:
-        InterestRateResponse: The calculated average interest rate
+        dict: Confirmation message with calculated average rate and assets processed
         
     Raises:
         HTTPException: If the request data is invalid or processing fails
     """
     try:
         # Calculate and save average interest rate
-        average_rate = await service.calculate_and_save_average_rate(assets)
+        await service.calculate_and_save_average_rate(assets)
         
-        # Get the stored data to return with timestamp
-        result = await service.get_current_rate()
-        _, timestamp = result
-        
-        return InterestRateResponse(
-            interest_rate=average_rate,
-            updated_at=timestamp
+        return POSTInterestRateResponse(
+            message="Average interest rate calculated and saved successfully",
         )
         
     except ValueError as e:
@@ -67,7 +63,7 @@ async def update_assets(
 
 @router.get(
     "/interest_rate",
-    response_model=InterestRateResponse,
+    response_model=GETInterestRateResponse,
     status_code=status.HTTP_200_OK,
     responses={
         404: {"model": ErrorResponse, "description": "Interest rate not found"},
@@ -104,7 +100,7 @@ async def get_interest_rate(
         
         rate, timestamp = result
         
-        return InterestRateResponse(
+        return GETInterestRateResponse(
             interest_rate=rate,
             updated_at=timestamp
         )

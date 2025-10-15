@@ -4,28 +4,23 @@ from datetime import datetime, timezone
 
 from ..schemas.endpoints.assets import AssetRequest
 
+
 class InterestRateService:
     """Service for managing interest rate operations."""
     
     def __init__(self, repository):
         self.repository = repository
     
-    async def calculate_and_save_average_rate(self, assets: List[AssetRequest]) -> Decimal:
+    async def calculate_and_save_average_rate(self, assets: List[AssetRequest]) -> bool:
         """
         Calculate average interest rate from assets and save it.
         
         Args:
-            assets: List of assets with their interest rates
+            assets: List of assets with their interest rates (validated by FastAPI)
             
         Returns:
-            Decimal: The calculated average interest rate
-            
-        Raises:
-            ValueError: If assets list is empty or invalid
+            bool: True if the average interest rate was calculated and saved successfully
         """
-        if not assets:
-            raise ValueError("Asset list cannot be empty")
-        
         # Calculate average interest rate
         total_rate = sum(asset.interest_rate for asset in assets)
         average_rate = total_rate / len(assets)
@@ -36,7 +31,7 @@ class InterestRateService:
         # Save to repository
         self.repository.save_interest_rate(average_rate, current_time)
         
-        return average_rate
+        return True
     
     async def get_current_rate(self) -> Optional[tuple[Decimal, str]]:
         """

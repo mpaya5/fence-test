@@ -3,10 +3,10 @@ import os
 
 
 class Settings:
-    POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="", cast=str)
-    POSTGRES_USER: str = config("POSTGRES_USER", default="", cast=str)
-    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="", cast=str)
-    POSTGRES_DB: str = config("POSTGRES_DB", default="", cast=str)
+    POSTGRES_SERVER: str = config("POSTGRES_SERVER", default="postgres", cast=str)
+    POSTGRES_USER: str = config("POSTGRES_USER", default="fence_user", cast=str)
+    POSTGRES_PASSWORD: str = config("POSTGRES_PASSWORD", default="fence_password", cast=str)
+    POSTGRES_DB: str = config("POSTGRES_DB", default="fence_test", cast=str)
     POSTGRES_PORT: str = config("POSTGRES_PORT", default="5432", cast=str)
 
     @property
