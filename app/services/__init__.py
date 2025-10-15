@@ -8,8 +8,7 @@ def get_interest_rate_service() -> InterestRateService:
     """Get the interest rate service instance with Smart Contract storage."""
     web3_client = Web3Client(
         rpc_url=settings.BLOCKCHAIN_RPC_URL,
-        contract_address=settings.CONTRACT_ADDRESS,
-        private_key=settings.PRIVATE_KEY
+        private_key=settings.HARDHAT_PRIVATE_KEY
     )
     storage = SmartContractStorage(web3_client)
     return InterestRateService(storage)

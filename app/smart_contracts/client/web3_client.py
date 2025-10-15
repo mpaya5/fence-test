@@ -7,34 +7,72 @@ from typing import Tuple, Optional
 from decimal import Decimal
 from web3 import Web3
 from eth_account import Account
-from ..abi import ABI
 from app.core.config import settings
+from app.core.logger import logger
 
 
 class Web3Client:
     """Web3 client for smart contract interactions."""
     
-    def __init__(self, rpc_url: str, contract_address: str, private_key: str):
+    def __init__(self, rpc_url: str, private_key: str):
         """
         Initialize Web3 client.
         
         Args:
             rpc_url: Ethereum RPC URL
-            contract_address: Smart contract address
             private_key: Private key for transactions
         """
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         if not self.w3.is_connected():
             raise ConnectionError(f"Failed to connect to Ethereum node at {rpc_url}")
             
-        self.contract_address = contract_address
+        # Read contract info from Hardhat deployments
+        self.contract_address, self.abi = self._load_contract_info()
         self.account = Account.from_key(private_key)
         
         # Load contract
         self.contract = self.w3.eth.contract(
-            address=contract_address,
-            abi=ABI
+            address=self.contract_address,
+            abi=self.abi
         )
+        
+        logger.info(f"🔗 Connected to contract at: {self.contract_address}")
+    
+    def _load_contract_info(self) -> tuple[str, list]:
+        """Load contract address and ABI from Hardhat deployments."""
+        try:
+            # Try localhost first (for local development)
+            deployment_path = "/app/deployments/localhost/InterestRateContract.json"
+            
+            if not os.path.exists(deployment_path):
+                # Fallback to any network
+                deployments_dir = "/app/deployments"
+                if os.path.exists(deployments_dir):
+                    for network_dir in os.listdir(deployments_dir):
+                        network_path = os.path.join(deployments_dir, network_dir)
+                        if os.path.isdir(network_path):
+                            contract_path = os.path.join(network_path, "InterestRateContract.json")
+                            if os.path.exists(contract_path):
+                                deployment_path = contract_path
+                                break
+            
+            if not os.path.exists(deployment_path):
+                raise FileNotFoundError(f"Contract deployment not found at {deployment_path}")
+            
+            with open(deployment_path, 'r') as f:
+                contract_data = json.load(f)
+            
+            address = contract_data['address']
+            abi = contract_data['abi']
+            
+            logger.info(f"📄 Loaded contract info from: {deployment_path}")
+            logger.info(f"📍 Contract address: {address}")
+            
+            return address, abi
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to load contract info: {str(e)}")
+            raise Exception(f"Could not load contract deployment info: {str(e)}")
     
     def update_interest_rate(self, rate: Decimal, timestamp: int, wait_for_confirmation: bool = True) -> tuple[str, dict]:
         """

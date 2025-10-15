@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies (including dev dependencies for hardhat-deploy)
-RUN npm ci
+RUN npm install
 
 # Copy Hardhat configuration, contracts, and deploy scripts
 COPY hardhat.config.js ./
@@ -22,31 +22,38 @@ COPY deploy/ ./deploy/
 RUN npx hardhat compile
 
 # Create startup script that deploys contracts and starts node
-RUN echo '#!/bin/sh\n\
-# Start Hardhat node in background\n\
-echo "Starting Hardhat node..."\n\
-npx hardhat node --hostname 0.0.0.0 &\n\
-NODE_PID=$!\n\
-\n\
-# Wait for node to be ready with better checking\n\
-echo "Waiting for Hardhat node to be ready..."\n\
-for i in $(seq 1 30); do\n\
-  if curl -s http://localhost:8545 > /dev/null 2>&1; then\n\
-    echo "Hardhat node is ready!"\n\
-    break\n\
-  fi\n\
-  echo "Attempt $i/30: Node not ready yet, waiting..."\n\
-  sleep 2\n\
-done\n\
-\n\
-# Deploy contracts\n\
-echo "Deploying contracts..."\n\
-npx hardhat deploy --network localhost\n\
-\n\
-echo "Deployment completed. Node running..."\n\
-# Keep node running\n\
-wait $NODE_PID\n\
-' > /app/start.sh && chmod +x /app/start.sh
+RUN cat > /app/start.sh << 'EOF'
+#!/bin/sh
+# Start Hardhat node in background
+echo "Starting Hardhat node..."
+npx hardhat node --hostname 0.0.0.0 &
+NODE_PID=$!
+
+# Wait for node to be ready with better checking
+echo "Waiting for Hardhat node to be ready..."
+for i in $(seq 1 30); do
+  if curl -s http://localhost:8545 > /dev/null 2>&1; then
+    echo "Hardhat node is ready!"
+    break
+  fi
+  echo "Attempt $i/30: Node not ready yet, waiting..."
+  sleep 2
+done
+
+# Deploy contracts
+echo "Deploying contracts..."
+npx hardhat deploy --network localhost
+
+# Create ready signal file
+echo "Creating ready signal..."
+touch /app/.hardhat-ready
+
+echo "Deployment completed. Node running..."
+# Keep node running
+wait $NODE_PID
+EOF
+
+RUN chmod +x /app/start.sh
 
 # Expose port for Hardhat node
 EXPOSE 8545

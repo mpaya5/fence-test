@@ -18,12 +18,9 @@ module.exports = async ({ getNamedAccounts, deployments, network }) => {
   log(`📝 Contract Address: ${interestRateContract.address}`);
   log(`🔑 Deployer Address: ${deployer}`);
   log("");
-  log("📋 Add these values to your .env file:");
-  log(`CONTRACT_ADDRESS=${interestRateContract.address}`);
-  log(`BLOCKCHAIN_RPC_URL=http://hardhat-node:8545`);
-  log("");
 
-  return true;
+  return interestRateContract;
 };
 
+module.exports.id = "InterestRateContract";
 module.exports.tags = ["InterestRateContract"];
