@@ -14,19 +14,36 @@ from app.core.logger import logger
 class Web3Client:
     """Web3 client for smart contract interactions."""
     
-    def __init__(self, rpc_url: str, private_key: str):
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls, rpc_url: str = None, private_key: str = None):
+        """Singleton pattern to ensure only one instance exists."""
+        if cls._instance is None:
+            cls._instance = super(Web3Client, cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self, rpc_url: str = None, private_key: str = None):
         """
-        Initialize Web3 client.
+        Initialize Web3 client (only once due to singleton pattern).
         
         Args:
-            rpc_url: Ethereum RPC URL
-            private_key: Private key for transactions
+            rpc_url: Ethereum RPC URL (uses settings if not provided)
+            private_key: Private key for transactions (uses settings if not provided)
         """
+        # Only initialize once
+        if self._initialized:
+            return
+            
+        # Use settings if parameters not provided
+        rpc_url = rpc_url or settings.BLOCKCHAIN_RPC_URL
+        private_key = private_key or settings.HARDHAT_PRIVATE_KEY
+        
         self.w3 = Web3(Web3.HTTPProvider(rpc_url))
         if not self.w3.is_connected():
             raise ConnectionError(f"Failed to connect to Ethereum node at {rpc_url}")
             
-        # Read contract info from Hardhat deployments
+        # Read contract info from Hardhat deployments (only once)
         self.contract_address, self.abi = self._load_contract_info()
         self.account = Account.from_key(private_key)
         
@@ -37,6 +54,7 @@ class Web3Client:
         )
         
         logger.info(f"🔗 Connected to contract at: {self.contract_address}")
+        self._initialized = True
     
     def _load_contract_info(self) -> tuple[str, list]:
         """Load contract address and ABI from Hardhat deployments."""
