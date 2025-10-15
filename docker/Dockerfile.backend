@@ -1,0 +1,47 @@
+# Use official Python runtime as a parent image
+FROM python:3.13-slim
+
+# Create a non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory in the container
+WORKDIR /app
+
+# Set environment variables
+ENV PORT=8000
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        postgresql-client \
+        netcat-traditional \
+        gcc \
+        python3-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install Python dependencies first to leverage Docker cache
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the project
+COPY . .
+
+# Create start.sh script
+RUN echo '#!/bin/bash\n\
+\n\
+echo "Starting FastAPI service..."\n\
+exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT}' > start.sh && chmod +x start.sh
+
+# Set ownership to non-root user
+RUN chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose the port the app runs on
+EXPOSE ${PORT}
+
+# Command to run the application
+CMD ["./start.sh"]
