@@ -40,11 +40,6 @@ class GETInterestRateResponse(BaseModel):
 class POSTInterestRateResponse(BaseModel):
     """Response schema for POST asset endpoint."""
     message: str = Field(..., description="Confirmation message")
-    
-    class Config:
-        json_encoders = {
-            Decimal: str
-        }
 
 
 class ErrorResponse(BaseModel):
