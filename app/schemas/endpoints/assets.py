@@ -1,6 +1,3 @@
-"""
-Schemas for asset-related endpoints.
-"""
 from pydantic import BaseModel, Field
 from typing import List
 from decimal import Decimal
