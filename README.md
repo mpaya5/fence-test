@@ -218,6 +218,24 @@ curl -X GET "http://localhost:8000/interest_rate" \
 4. **Load Testing**: Performance testing under concurrent requests
 5. **Security Testing**: Penetration testing and vulnerability scans
 
+### 🔄 **CI/CD Pipeline & Quality Gates**
+1. **GitHub Actions Workflows**:
+   - **Linting & Formatting**: Automated code quality checks with Black, isort, flake8
+   - **Pre-commit Hooks**: Local validation before commits (Black, isort, mypy, security scans)
+   - **Automated Testing**: Unit tests, integration tests, and Smart Contract tests on every PR
+   - **Security Scanning**: Dependabot for dependency updates, CodeQL for security analysis
+   - **Contract Verification**: Automated Smart Contract verification on testnets
+2. **Branch Protection Rules**:
+   - **Required Status Checks**: All workflows must pass before merge
+   - **Required Reviews**: At least 1 approved review for main branch
+   - **Up-to-date Branches**: PR must be up-to-date with main before merge
+   - **Dismiss Stale Reviews**: Reviews dismissed when new commits are pushed
+3. **Quality Gates**:
+   - **Code Coverage**: Test coverage requirement
+   - **Security Checks**: No high/critical vulnerabilities allowed
+   - **Performance Tests**: API response time and blockchain transaction validation
+   - **Contract Tests**: Smart Contract function testing and gas optimization
+
 ## Technical Implementation Details
 
 ### 🗄️ **Database Schema**
