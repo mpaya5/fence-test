@@ -1,9 +1,6 @@
-"""
-Schemas for asset-related endpoints.
-"""
-from pydantic import BaseModel, Field
-from typing import List
 from decimal import Decimal
+
+from pydantic import BaseModel, Field
 
 
 class AssetRequest(BaseModel):
@@ -19,7 +16,7 @@ class AssetRequest(BaseModel):
 
 class AssetListRequest(BaseModel):
     """Request schema for asset list endpoint."""
-    assets: List[AssetRequest] = Field(..., min_items=1, description="List of assets to process")
+    assets: list[AssetRequest] = Field(..., min_items=1, description="List of assets to process")
     
     class Config:
         json_encoders = {
@@ -27,7 +24,7 @@ class AssetListRequest(BaseModel):
         }
 
 
-class InterestRateResponse(BaseModel):
+class GETInterestRateResponse(BaseModel):
     """Response schema for interest rate endpoints."""
     interest_rate: Decimal = Field(..., description="Current average interest rate")
     updated_at: str = Field(..., description="Timestamp when the rate was last updated")
@@ -36,6 +33,10 @@ class InterestRateResponse(BaseModel):
         json_encoders = {
             Decimal: str
         }
+
+class POSTInterestRateResponse(BaseModel):
+    """Response schema for POST asset endpoint."""
+    message: str = Field(..., description="Confirmation message")
 
 
 class ErrorResponse(BaseModel):

@@ -1,17 +1,101 @@
-version: '3.8'
-
 services:
+  postgres:
+    profiles: ["postgres"]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fence_test}
+      POSTGRES_USER: ${POSTGRES_USER:-fence_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fence_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fence_user} -d ${POSTGRES_DB:-fence_test}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  database_migrations:
+    profiles: ["postgres"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.migrations
+    env_file:
+      - .env
+    environment:
+      - DOCKER_ENV=1
+      - POSTGRES_SERVER=${POSTGRES_SERVER}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    security_opt:
+      - no-new-privileges:true
+
+  hardhat-node:
+    profiles: ["smart_contract"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.hardhat
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./contracts:/app/contracts:ro
+      - ./deploy:/app/deploy:ro
+      - ./hardhat.config.js:/app/hardhat.config.js:ro
+      - hardhat_cache:/app/cache
+      - hardhat_deployments:/app/deployments
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "curl -f http://localhost:8545 && test -f /app/.hardhat-ready"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   fence-test-api:
     build:
       context: .
       dockerfile: docker/Dockerfile.backend
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
+    env_file:
+      - .env
     environment:
-      - API_KEY_AUTH=your-secret-api-key-here
-      - DEBUG=true
+      - API_KEY_AUTH=${API_KEY_AUTH:-your-secret-api-key-here}
+      - STORAGE_BACKEND=${STORAGE_BACKEND:-postgres}
+      - DEBUG=${DEBUG:-true}
       - PYTHONPATH=/app
+      - POSTGRES_SERVER=${POSTGRES_SERVER:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-fence_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fence_password}
+      - POSTGRES_DB=${POSTGRES_DB:-fence_test}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - BLOCKCHAIN_RPC_URL=${BLOCKCHAIN_RPC_URL:-http://hardhat-node:8545}
+      - HARDHAT_PRIVATE_KEY=${HARDHAT_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}
     volumes:
       - ./app:/app/app:ro
+      - hardhat_deployments:/app/deployments:ro
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false
+      database_migrations:
+        condition: service_completed_successfully
+        required: false
+      hardhat-node:
+        condition: service_healthy
+        required: false
     restart: unless-stopped
+
+volumes:
+  postgres_data:
+  hardhat_cache:
+  hardhat_deployments:

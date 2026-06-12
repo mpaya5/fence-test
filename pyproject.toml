@@ -1,0 +1,23 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008", "B904"]
+
+[tool.ruff.lint.per-file-ignores]
+"app/database_handler/migration/**" = ["E402", "F401"]
+"app/main.py" = ["E402"]
+"app/database_handler/__init__.py" = ["F401"]
+"app/database_handler/models/__init__.py" = ["F401"]
+"app/smart_contracts/**" = ["E501", "UP008"]
+"tests/**" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]

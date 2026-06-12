@@ -1,27 +1,33 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-import asyncio
+
+from app.api.v1.router import api_router
+from app.core.config import settings
 from app.core.logger import logger
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Lifespan of the FastAPI application.
-    """
     try:
         logger.info("Starting FastAPI application...")
+        logger.info(f"Storage backend: {settings.STORAGE_BACKEND.value}")
         yield
     except Exception as e:
         logger.error(f"Error starting FastAPI application: {e}")
-        raise e
+        raise
     finally:
         logger.info("Shutting down FastAPI application...")
 
+
 app = FastAPI(
-    title="Fence Test",
+    title="Fence Test API",
     version="1.0.0",
-    description="Fence Test",
+    description=(
+        "Asset interest rate management API. "
+        "Technical assessment rebuilt as a portfolio-quality FastAPI backend."
+    ),
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -36,11 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include the API routes (exact paths as per README.md)
-from app.api.v1.router import api_router
-
 app.include_router(api_router)
+
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the Fence Test!"}
+    return {
+        "message": "Welcome to the Fence Test!",
+        "storage_backend": settings.STORAGE_BACKEND.value,
+    }

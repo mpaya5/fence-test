@@ -1,2 +1,11 @@
 .env
-venv
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+logs/
+node_modules/
+cache/
+artifacts/
+deployments/
