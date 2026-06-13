@@ -3,14 +3,86 @@
 [![CI](https://github.com/mpaya5/fence-test/actions/workflows/ci.yml/badge.svg)](https://github.com/mpaya5/fence-test/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.119-009688)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-> **FastAPI technical assessment rebuilt as a portfolio-quality backend exercise.**
->
-> One codebase, two storage backends — switch with a single environment variable.
+---
 
-This repository started as a take-home technical exercise (see [`INSTRUCTIONS.md`](INSTRUCTIONS.md)). I rebuilt it into a production-minded backend sample: layered architecture, pluggable storage, PostgreSQL/SQLAlchemy + Alembic, an optional Hardhat/Solidity path, Docker, automated tests, and CI.
+## Recruiter / reviewer quick view
 
-**Both implementations live in `main`.** Set `STORAGE_BACKEND` in `.env` to choose where interest rates are persisted — no branch switching required.
+**This project demonstrates:**
+
+- FastAPI backend architecture
+- PostgreSQL + SQLAlchemy + Alembic
+- Clean service / repository / storage separation
+- Dockerized local environment
+- API key authentication
+- Pytest test suite and GitHub Actions CI
+- Optional Solidity / Hardhat storage backend (switch via `STORAGE_BACKEND`)
+
+> Take-home technical assessment rebuilt as a **portfolio-quality backend exercise**.  
+> One codebase, two persistence backends — no branch switching required.
+
+| | |
+|---|---|
+| **Run (PostgreSQL)** | `cp .env.example .env && docker compose --profile postgres up --build` |
+| **Run (Smart contract)** | set `STORAGE_BACKEND=smart_contract` → `docker compose --profile smart_contract up --build` |
+| **Tests** | `pip install -r requirements-dev.txt && make test` |
+| **API docs** | http://localhost:8000/docs |
+
+---
+
+## Endpoints at a glance
+
+| Method | Path | Auth | Description |
+|:------:|------|:----:|-------------|
+| `GET` | `/` | — | Health check + active storage backend |
+| `POST` | `/asset` | `api_key` | Submit assets → compute & persist average interest rate |
+| `GET` | `/interest_rate` | `api_key` | Return the latest stored average rate |
+| `GET` | `/docs` | — | Swagger UI (OpenAPI) |
+| `GET` | `/redoc` | — | ReDoc documentation |
+
+Default API key: `your-secret-api-key-here` (override in `.env`)
+
+### Try it in 30 seconds
+
+```bash
+# 1. Health check
+curl http://localhost:8000/
+
+# 2. Submit assets and save the average rate
+curl -X POST "http://localhost:8000/asset" \
+  -H "api_key: your-secret-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '[{"id": "id-1", "interest_rate": 100}, {"id": "id-2", "interest_rate": 10}]'
+
+# 3. Read the stored rate
+curl -H "api_key: your-secret-api-key-here" http://localhost:8000/interest_rate
+```
+
+**Sample responses:**
+
+```json
+// GET /
+{"message": "Welcome to the Fence Test!", "storage_backend": "postgres"}
+
+// POST /asset
+{"message": "Average interest rate calculated and saved successfully"}
+
+// GET /interest_rate
+{"interest_rate": "55.0", "updated_at": "2025-10-15T18:22:51.768546"}
+```
+
+---
+
+## Swagger / OpenAPI
+
+Auto-generated at `/docs` when the API is running:
+
+![Swagger UI — overview](docs/images/swagger-overview.png)
+
+![Swagger UI — POST /asset](docs/images/swagger-post-asset.png)
+
+> Regenerate: start the API, then `python scripts/capture_swagger_screenshots.py` (requires `playwright`).
 
 ---
 
@@ -40,7 +112,7 @@ flowchart LR
 | **PostgreSQL path** | Repository + SQLAlchemy + Alembic | `app/repositories/`, `app/database_handler/` |
 | **Smart contract path** | Web3 client + Solidity contract | `app/smart_contracts/`, `contracts/` |
 
-The service layer never imports SQLAlchemy or Web3 directly — it depends on the `InterestRateStorage` interface. Swapping backends is a config change, not a refactor.
+The service layer never imports SQLAlchemy or Web3 directly — swapping backends is a config change, not a refactor.
 
 ---
 
@@ -52,25 +124,6 @@ Set in `.env`:
 |-------|---------|----------------|
 | `postgres` *(default)* | PostgreSQL via SQLAlchemy | `--profile postgres` |
 | `smart_contract` | Solidity contract on Hardhat | `--profile smart_contract` |
-
-```bash
-# PostgreSQL (default)
-STORAGE_BACKEND=postgres
-docker compose --profile postgres up --build
-
-# Smart contract
-STORAGE_BACKEND=smart_contract
-docker compose --profile smart_contract up --build
-```
-
-The health check at `GET /` returns the active backend:
-
-```json
-{
-  "message": "Welcome to the Fence Test!",
-  "storage_backend": "postgres"
-}
-```
 
 ---
 
@@ -103,7 +156,7 @@ The original exercise asked for a **Smart Contract** to store the interest rate,
 | **Ops complexity** | Postgres + migrations | Hardhat node + Web3 client + contract deploy |
 | **Interview fit** | Primary backend portfolio piece | Shows breadth; same API, different adapter |
 
-Rather than maintaining two branches, both adapters share one service layer — the design decision I'd explain in an interview.
+Both adapters share one service layer — the design decision I'd explain in an interview.
 
 ---
 
@@ -120,7 +173,6 @@ Rather than maintaining two branches, both adapters share one service layer — 
 git clone https://github.com/mpaya5/fence-test.git
 cd fence-test
 cp .env.example .env
-# STORAGE_BACKEND=postgres  (already the default)
 docker compose --profile postgres up --build
 ```
 
@@ -132,129 +184,54 @@ cp .env.example .env
 docker compose --profile smart_contract up --build
 ```
 
-| URL | Description |
-|-----|-------------|
-| http://localhost:8000/docs | Swagger UI |
-| http://localhost:8000/redoc | ReDoc |
-| http://localhost:8000/ | Health check (+ active storage backend) |
-
 ---
 
-## API reference
-
-### Endpoints
-
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| `GET` | `/` | No | Health / welcome + active `storage_backend` |
-| `GET` | `/docs` | No | Swagger UI (OpenAPI) |
-| `GET` | `/redoc` | No | ReDoc documentation |
-| `POST` | `/asset` | `api_key` header | Receive assets, compute average rate, persist |
-| `GET` | `/interest_rate` | `api_key` header | Return latest stored average rate |
-
-Default API key (override in `.env`): `your-secret-api-key-here`
-
----
-
-### Example: success flow
-
-**1. POST /asset** — submit assets and persist the average
-
-```bash
-curl -X POST "http://localhost:8000/asset" \
-  -H "api_key: your-secret-api-key-here" \
-  -H "Content-Type: application/json" \
-  -d '[{"id": "id-1", "interest_rate": 100}, {"id": "id-2", "interest_rate": 10}]'
-```
-
-```json
-{
-  "message": "Average interest rate calculated and saved successfully"
-}
-```
-
-**2. GET /interest_rate** — read the latest value
-
-```bash
-curl -X GET "http://localhost:8000/interest_rate" \
-  -H "api_key: your-secret-api-key-here"
-```
-
-```json
-{
-  "interest_rate": "55.0",
-  "updated_at": "2025-10-15T18:22:51.768546"
-}
-```
-
----
-
-### Example: errors
+## API reference — errors
 
 | Status | Scenario | Response body |
 |--------|----------|---------------|
 | **403** | Missing API key | `{"detail": "No API key provided"}` |
 | **403** | Wrong API key | `{"detail": "Invalid API key"}` |
 | **404** | No rate stored yet | `{"detail": "No interest rate found. Please update assets first."}` |
-| **422** | Validation error (e.g. negative rate) | `{"detail": [{"type": "greater_than_equal", "loc": ["body", 0, "interest_rate"], ...}]}` |
+| **422** | Validation error (e.g. negative rate) | Pydantic validation detail array |
 | **500** | Unexpected server error | `{"detail": "Internal server error: ..."}` |
 
 ```bash
 # 403 — no API key
-curl -s http://localhost:8000/interest_rate | jq
+curl -s http://localhost:8000/interest_rate
 
 # 404 — before any POST /asset
-curl -s -H "api_key: your-secret-api-key-here" http://localhost:8000/interest_rate | jq
+curl -s -H "api_key: your-secret-api-key-here" http://localhost:8000/interest_rate
 ```
-
----
-
-## Swagger UI
-
-Interactive docs are auto-generated at `/docs`:
-
-![Swagger UI overview](docs/images/swagger-overview.png)
-
-![POST /asset endpoint](docs/images/swagger-post-asset.png)
-
-> Regenerate screenshots after UI changes: start the API, then run `python scripts/capture_swagger_screenshots.py` (requires `playwright`).
 
 ---
 
 ## Tests
 
-Tests use **pytest** with an in-memory SQLite database — no Docker required.
-
 ```bash
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements-dev.txt
-make test
+make test        # or: make lint
 ```
 
-Or directly: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest -v`
+**13 tests** covering health check, POST/GET flows, auth (403), validation (422), service layer, and storage factory selection.
 
-Coverage includes:
-
-- Health check (including active storage backend)
-- POST `/asset` average calculation and persistence
-- GET `/interest_rate` happy path and 404
-- API key authentication (403)
-- Pydantic validation (422)
-- Service-layer unit tests
-- Storage factory (postgres vs smart_contract selection)
+CI runs the same checks on every push to `main` (Ruff + pytest).
 
 ---
 
-## What I would improve in production
+## Production improvements
 
-1. **Authentication** — Replace API-key header with OAuth2/JWT, rotate secrets via a vault (AWS Secrets Manager, HashiCorp Vault).
-2. **Async I/O** — Move to `asyncpg` + async SQLAlchemy sessions for better concurrency under load.
-3. **Connection pooling** — Tune pool size, `pool_pre_ping`, and timeouts on the SQLAlchemy engine.
-4. **Observability** — Structured logging (JSON), OpenTelemetry traces, Prometheus metrics, health/readiness probes.
-5. **API hardening** — Rate limiting, request size limits, HTTPS termination, CORS restricted to known origins.
-6. **CI/CD** — Extend the current Ruff + pytest pipeline with Docker image build, migration smoke tests against real Postgres, and deployment to staging.
-7. **Domain evolution** — Asset history table, idempotency keys on POST, pagination on historical rates, event publishing (SQS/Kafka) for downstream consumers.
+What I would add before shipping to production:
+
+1. **Authentication** — OAuth2/JWT instead of API-key header; secrets in a vault (AWS Secrets Manager, HashiCorp Vault).
+2. **Async I/O** — `asyncpg` + async SQLAlchemy sessions for better concurrency.
+3. **Connection pooling** — Tune `pool_size`, `pool_pre_ping`, and timeouts on the SQLAlchemy engine.
+4. **Observability** — Structured JSON logging, OpenTelemetry traces, Prometheus metrics, `/health` + `/ready` probes.
+5. **API hardening** — Rate limiting, request size limits, HTTPS, restricted CORS.
+6. **CI/CD** — Docker image build, migration smoke tests against real Postgres, deploy to staging.
+7. **Domain evolution** — Asset history table, idempotency keys on POST, pagination, event publishing (SQS/Kafka).
 
 ---
 

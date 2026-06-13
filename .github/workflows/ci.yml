@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, feat-database-version, feat-smartcontract-version]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -28,9 +28,7 @@ jobs:
           pip install -r requirements-dev.txt
 
       - name: Lint with Ruff
-        run: ruff check app tests
+        run: make lint
 
       - name: Run tests
-        env:
-          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
-        run: pytest -v
+        run: make test
